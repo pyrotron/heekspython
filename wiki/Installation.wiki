@@ -1,0 +1,16 @@
+
+Must be installed under HeeksCAD/HeeksPython
+
+Well, thats complicated....  I'll be working on some new projects that ease the dependency installation under windows. 
+
+Linux builds should be easy once somebody makes a makefile. 
+
+You need to have installed under ubuntu:
+
+python
+wxwidgets
+wxpython-tools
+
+Somehow build and link against those and you should be a-ok.
+
+The dll-name must be HeeksPython_d.pyd for debug builds and HeeksPython.pyd for release builds(of HeeksCAD). This pyd file must be located in the same directory as the HeeksCAD executable. The plugin file chooser tries to filter files by extension, so you usually need to type in the plugin lib name to get it to work.
