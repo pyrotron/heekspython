@@ -28,3 +28,20 @@ there are functions for arc, cuboids, circles, line3d
 cad.cut only works on a group and a solid
 
 you must cad.getlastobj() after doing a cut or a fuse as the old objects have been deleted and there handles are no longer valid
+
+Scripts don't have to be entered in the python interpreter window by hand. They can be imported. You can create a python script and save it, then do something like:
+import sys
+
+sys.path.insert(0,'/home/dan/HeeksCAD/heekspython/examples/buttons')
+import macro
+do_it = macro.MyFrame1(None, -1, "")
+do_it.Show()
+
+In this example, 'macro' is a wxpython script that brings up a gui
+
+
+
+
+
+
+
