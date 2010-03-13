@@ -33,13 +33,14 @@ Scripts don't have to be entered in the python interpreter window by hand. They 
 import sys
 
 sys.path.insert(0,'/home/dan/HeeksCAD/heekspython/examples/buttons')
+
 import macro
+
 do_it = macro.MyFrame1(None, -1, "")
+
 do_it.Show()
 
 In this example, 'macro' is a wxpython script that brings up a gui
-
-
 
 
 
