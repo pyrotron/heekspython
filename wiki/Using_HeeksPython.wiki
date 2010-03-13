@@ -29,7 +29,10 @@ cad.cut only works on a group and a solid
 
 you must cad.getlastobj() after doing a cut or a fuse as the old objects have been deleted and there handles are no longer valid
 
+*Importing scripts
+
 Scripts don't have to be entered in the python interpreter window by hand. They can be imported. You can create a python script and save it, then do something like:
+
 import sys
 
 sys.path.insert(0,'/home/dan/HeeksCAD/heekspython/examples/buttons')
@@ -42,7 +45,13 @@ do_it.Show()
 
 In this example, 'macro' is a wxpython script that brings up a gui
 
+*Examples
 
+There are a few example scripts in the 'examples' directory
+
+'examples.py' runs through a lot of the geometric types that are available for heekspython.
+
+'polar_array.py' is a small example of how a wxgui can be applied to heekspython. Look at polar_array_readme.txt to see how to use it.
 
 
 
