@@ -44,8 +44,9 @@
     <IntDir>$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
+    <OutDir>$(HEEKSCADPATH)\</OutDir>
     <IntDir>$(Configuration)\</IntDir>
+    <TargetExt>.pyd</TargetExt>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -70,7 +71,7 @@
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>.\;$(PYTHON_INCLUDE);$(HEEKSCADPATH);$(WXWIN)\lib\vc_dll\mswu;$(WXWIN)\include;$(WXWIN)\wxPython\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;$(PYTHON3_INCLUDE);$(HEEKSCADPATH);$(WXWIN30)\lib\vc_dll\mswu;$(WXWIN30)\include;$(WXWIN)\include\msvc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;__WXMSW__;_WINDOWS;_UNICODE;UNICODE;NOPCH;WNT;_CRT_SECURE_NO_WARNINGS;WXUSINGDLL;STRICT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -78,9 +79,9 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>wxbase28u.lib;wxmsw28u_core.lib;wxmsw28u_aui.lib;wxmsw28u_gl.lib;$(PYTHON_LIB);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>wxmsw30u_core.lib;wxmsw30u_aui.lib;wxmsw30u_gl.lib;wxbase30u.lib;$(PYTHON3_LIB);%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(HEEKSCADPATH)\$(ProjectName).pyd</OutputFile>
-      <AdditionalLibraryDirectories>$(WXWIN)\lib\vc_dll;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(WXWIN30)\lib\vc_dll;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -88,14 +89,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="ConsoleCanvas.cpp" />
     <ClCompile Include="DllMain.cpp" />
     <ClCompile Include="HeeksPython.cpp" />
     <ClCompile Include="PythonInterface.cpp" />
-    <ClCompile Include="..\..\HeeksCAD\interface\ToolImage.cpp" />
+    <ClCompile Include="..\..\HeeksCADSVN\interface\ToolImage.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ConsoleCanvas.h" />
     <ClInclude Include="HeeksPython.h" />
     <ClInclude Include="Interface.h" />
     <ClInclude Include="PythonConfig.h" />

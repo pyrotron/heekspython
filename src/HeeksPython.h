@@ -7,11 +7,9 @@
 extern CHeeksCADInterface* heeksCAD;
 
 class Property;
-class CConsoleCanvas;
 
 class CHeeksPythonApp{
 public:
-	CConsoleCanvas* m_console;
 	wxString m_dll_path;
 
 	CHeeksPythonApp();
@@ -22,7 +20,6 @@ public:
 	void OnInitDLL();
 	void OnDestroyDLL();
 	void GetOptions(std::list<Property *> *list);
-	void OnFrameDelete();
 	wxString GetDllFolder();
 	wxString GetResFolder();
 };
