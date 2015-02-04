@@ -7,6 +7,12 @@
 #pragma warning(disable : 4996)
 #endif
 
+
+#define HAVE_ACOSH
+#define HAVE_ASINH
+#define HAVE_ATANH
+#define HAVE_LOG1P
+
 #include <list>
 #include <vector>
 #include <map>

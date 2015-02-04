@@ -10,22 +10,16 @@
 #include "interface/HeeksCADInterface.h"
 #include "interface/HeeksObj.h"
 #include "interface/ToolImage.h"
-#include "ConsoleCanvas.h"
 #include "PythonConfig.h"
 
-
-
-//#include "src/PointDrawing.h"
 #include <set>
 
 #ifdef _DEBUG
 #undef _DEBUG
 #include <Python.h>
-#include <wx/wxPython/wxPython.h>
 #define _DEBUG
 #else
 #include <Python.h>
-#include <wx/wxPython/wxPython.h>
 #endif
 
 
@@ -58,17 +52,12 @@ void GetOptions(void(*callbackfunc)(Property*))
 
 void OnFrameDelete()
 {
-	theApp.OnFrameDelete();
 }
 
 HeeksObj* lastobj;
 
 static PyObject* NewPoint(PyObject* self, PyObject* args)
 {
-//from PointDrawing.cpp:
-//temp_object = new HPoint(end.m_point, &wxGetApp().current_color);
-//if(temp_object)temp_object_in_list.push_back(temp_object);
-
 	const double p[3]={0,0,0};
 	if (!PyArg_ParseTuple(args, "ddd", &p[0],&p[1],&p[2])) return NULL;
 
@@ -312,18 +301,9 @@ static PyObject* NewSketch(PyObject* self, PyObject* args)
 	return pValue;
 }
 
-static PyObject* WxHandle(PyObject* self, PyObject* args)
-{
-
-	PyObject *pValue = wxPyMake_wxObject(m_window, false);
-	Py_INCREF(pValue);
-	return pValue;
-}
-
 static PyObject* GetLastObj(PyObject* self, PyObject* args)
 {
-	//return PyInt_FromLong(lastobj->m_id | lastobj->GetIDGroupType()<<16);
-	return PyInt_FromLong(lastobj->m_id | lastobj->GetIDGroupType()<<16);
+	return PyLong_FromLong(lastobj->m_id | lastobj->GetIDGroupType() << 16);
 }
 
 static PyObject* Rotate(PyObject* self, PyObject* args)
@@ -441,7 +421,7 @@ static PyObject* Add(PyObject* self, PyObject* args)
     // Convert the PyCObject to a void pointer:
     obj = (HeeksObj*)heeksCAD->GetIDObject(pyobj>>16,pyobj&0xFFFF);
 	group = (HeeksObj*)heeksCAD->GetIDObject(pygroup>>16,pygroup&0xFFFF);
-	obj->Owner()->Remove(obj);
+	obj->m_owner->Remove(obj);
 	group->Add(obj,NULL);
 	
 	
@@ -537,8 +517,7 @@ static PyObject* Cut(PyObject* self, PyObject* args)
 static PyObject* NewCreateUndoPoint(PyObject* self, PyObject* args)
 {
 	
-	
-	heeksCAD->CreateUndoPoint();
+// todo if ever	heeksCAD->CreateUndoPoint();
 	
 	Py_INCREF(Py_None);
 	return Py_None;
@@ -550,7 +529,7 @@ static PyObject* NewChanged(PyObject* self, PyObject* args)
 {
 	
 	
-	heeksCAD->Changed();
+	//todo if ever heeksCAD->Changed();
 	
 	Py_INCREF(Py_None);
 	return Py_None;
@@ -773,19 +752,19 @@ static PyObject* AddMenu(PyObject* self, PyObject* args)
 	wxMenu *newMenu = new wxMenu;
 	frame->GetMenuBar()->Append(newMenu,  _U(menu_name));
 
-	return PyInt_FromSize_t((size_t)newMenu);//size_t instead of unsigned int for 64 bit gcc
+	return PyLong_FromSize_t((size_t)newMenu);//size_t instead of unsigned int for 64 bit gcc
 }
 
 static PyObject* GetFrameHwnd(PyObject* self, PyObject* args)
 {	
 	wxFrame* frame = heeksCAD->GetMainFrame();
-	return PyInt_FromSize_t((size_t)(frame->GetHandle()));//size_t instead of unsigned int for 64 bit gcc
+	return PyLong_FromSize_t((size_t)(frame->GetHandle()));//size_t instead of unsigned int for 64 bit gcc
 }
 
 static PyObject* GetFrameId(PyObject* self, PyObject* args)
 {	
 	wxFrame* frame = heeksCAD->GetMainFrame();
-	return PyInt_FromLong(frame->GetId());
+	return PyLong_FromLong(frame->GetId());
 }
 
 std::map<int, PyObject*> menu_item_map;
@@ -798,7 +777,9 @@ void OnMenuItem(wxCommandEvent &event)
 		// Execute the python code
 		PyObject* python_callback = FindIt->second;
 
-		PyEval_RestoreThread(theApp.m_console->m_mainTState);
+		// to do replace this commented line
+		//PyEval_RestoreThread(theApp.m_console->m_mainTState);
+
 		PyObject* result = PyEval_CallFunction(python_callback, "()");
 
 		// Release the python objects we still have
@@ -895,7 +876,7 @@ static PyObject* AddWindow(PyObject* self, PyObject* args)
 	heeksCAD->RegisterHideableWindow(new_window);
 	window_map.insert(std::make_pair(id, new_window));
 
-	return PyInt_FromLong(new_window->GetId());
+	return PyLong_FromLong(new_window->GetId());
 }
 
 static PyObject* DXFImport(PyObject* self, PyObject* args)
@@ -990,7 +971,8 @@ static PyObject *callback_new_or_open = NULL;
 void OnBeforeNewOrOpen(int open, int res) {
 	if(callback_new_or_open)
 	{
-		PyEval_RestoreThread(theApp.m_console->m_mainTState);
+		// to do, replace this line
+		//PyEval_RestoreThread(theApp.m_console->m_mainTState);
 		PyObject* result = PyEval_CallFunction(callback_new_or_open, "ii", open, res);
 		PyEval_SaveThread();
 	}
@@ -1036,7 +1018,7 @@ static PyObject* GetFileFullPath(PyObject* self, PyObject* args)
 	}
 	char conv_str[4096];
 	wcstombs(conv_str, str, 4096);
-	return PyString_FromString(conv_str);
+	return PyBytes_FromString(conv_str);
 }
 
 static PyObject* GetSketchShape(PyObject* self, PyObject* args)
@@ -1045,7 +1027,7 @@ static PyObject* GetSketchShape(PyObject* self, PyObject* args)
     if (!PyArg_ParseTuple( args, "i", &sketch_id)) return NULL;
 
 	HeeksObj* object = heeksCAD->GetIDObject(SketchType, sketch_id);
-	if(object == NULL)return PyString_FromString("");
+	if (object == NULL)return PyBytes_FromString("");
 
 	std::string sketch_str;
 
@@ -1100,7 +1082,7 @@ static PyObject* GetSketchShape(PyObject* self, PyObject* args)
 		delete re_ordered_sketch;
 	}
 
-	return PyString_FromString(sketch_str.c_str());
+	return PyBytes_FromString(sketch_str.c_str());
 }
 
 static PyObject* RemoveObject(PyObject* self, PyObject* args)
@@ -1119,66 +1101,138 @@ static PyObject* RemoveObject(PyObject* self, PyObject* args)
 	return pValue;
 }
 
-static PyMethodDef HeeksPythonMethods[] = {
-	{"sketch", NewSketch, METH_VARARGS , "sketch()"},
-	{"wxhandle", WxHandle, METH_VARARGS , "wxhandle()"},
-	{"extrude", Extrude, METH_VARARGS , "extrude(sketch,height)"},
-	{"revolve", Revolve, METH_VARARGS , "revolve(sketch,angle)"},
-	{"reorder", Reorder, METH_VARARGS , "reorder(sketch)"},
-	{"point", NewPoint, METH_VARARGS , "point(x,y,z)"},
-	{"linearc2wire", LineArc2Wire, METH_VARARGS , "linearc2wire(linearc)"},
-	{"pipe", Pipe, METH_VARARGS , "pipe(wire,sketch)"},
-	{"arc", NewArc, METH_VARARGS, "arc(cx,cy,cz,radius,start_a,end_a,ux,uy,uz)"},
-	{"arc2", NewArc2, METH_VARARGS, "arc(sx,sy,sz,ex,ey,ez,cx,cy,cz,ux,uy,uz)"},
-	{"line", NewLine, METH_VARARGS , "line(start_x, start_y, end_x, end_y)"},
-	{"line3d", NewLine3d, METH_VARARGS , "line3d(start_x, start_y, start_z, end_x, end_y, end_z)"},
-	{"circle", NewCircle, METH_VARARGS , "circle(centre_x, centre_y, radius)"},
-	{"cuboid", NewCuboid, METH_VARARGS , "cuboid(centre_x, centre_y, centre_z, length, width, height)"},
-	{"cylinder", NewCylinder, METH_VARARGS , "cylinder(centre_x, centre_y, centre_z, radius, height)"},
-    {"directedcylinder", NewCylinderEx, METH_VARARGS , "directedcylinder(centre_x, centre_y, centre_z, dir_x, dir_y, dir_z, radius, height)"},
-	{"cone", NewCone, METH_VARARGS , "cylinder(centre_x, centre_y, centre_z, radius1, radius2, height)"},
-	{"sphere",NewSphere,METH_VARARGS ,"sphere(centre_x, centre_y, centre_z, radius)"},
-	{"group", NewGroup, METH_VARARGS , "group()"},
-	{"add", Add, METH_VARARGS, "add(group,obj)"},
-	{"fuse",Fuse, METH_VARARGS, "fuse(obj1,obj2)"},
-	{"common",Common, METH_VARARGS, "common(obj1,obj2)"},
-	{"cut",Cut, METH_VARARGS, "cut(obj1,obj2)"},
-	{"getlastobj", GetLastObj, METH_VARARGS , "getlastobj()"},
-	{"rotate",Rotate, METH_VARARGS , "rotate(object,p_x,p_y,p_z,u_x,u_y,u_z,r)"},
-	{"translate",Translate, METH_VARARGS , "translate(object,p_x,p_y,p_z)"},
-	{"scale",Scale, METH_VARARGS , "scale(object,p_x,p_y,p_z,scale)"},
-	{"setcolor",SetColor, METH_VARARGS, "setcolor(int r, int b, int g)"},
-	{"fillet2d" ,Fillet2d, METH_VARARGS, "fillet2d(obj,point,radius)"},
-	{"coordinate" ,NewCoordinateSystem, METH_VARARGS, "coordinate(position,x_vec,y_vec)"},	
-	{"pickpoint" , PickPoint, METH_VARARGS, "pickpoint()"},	
-	{"lastclicked" , GetClickedPos, METH_VARARGS, "lastclicked()"},	
-	{"view_extents" , ViewExtents, METH_VARARGS, "view_extents()"},
-	{"ve" , ViewExtents, METH_VARARGS, "ve()"},
-	{"xyzview" , XYZview, METH_VARARGS, "xyzview()"},
-	{"getpoint" , GetPoint3d, METH_VARARGS, "getpoint()"},	
-	{"addtext", NewText, METH_VARARGS , "addtext('string')"},
-	{"importdxf", DXFImport, METH_VARARGS , "importdxf('/filepath/filename.dxf')"},	
-	{"addmenu", AddMenu, METH_VARARGS , "menu = addmenu('string')"},
-	{"add_menu_item", AddMenuItem, METH_VARARGS , "add_menu_item(menu, 'string', callback, icon)"},
-	{"add_window", AddWindow, METH_VARARGS , "add_window(hwnd)"},
-	{"get_frame_hwnd", GetFrameHwnd, METH_VARARGS , "hwnd = get_frame_hwnd()"},
-	{"get_frame_id", GetFrameId, METH_VARARGS , "hwnd = get_frame_id()"},
-	{"redraw" , Redraw, METH_VARARGS, "redraw()"},
-	{"getsketch" , GetSketch, METH_VARARGS, "getsketch()"},
-	{"getsketches" , GetSketches, METH_VARARGS, "getsketches()"},
-	{"get_selected_sketches" , GetSelectedSketches, METH_VARARGS, "get_selected_sketches()"},
-	{"register_callbacks" , RegisterCallbacks, METH_VARARGS, "register_callbacks(on_new_or_open)"},
-	{"get_view_units", GetViewUnits, METH_VARARGS , "units = get_view_units()"},
-	{"GetFileFullPath", GetFileFullPath, METH_VARARGS , "file_path = GetFileFullPath()"},
-	{"GetSketchShape", GetSketchShape, METH_VARARGS , "s = GetSketchShape(2)"},
-	{"remove",RemoveObject, METH_VARARGS , "remove(object)"},
-	{"undopt",NewCreateUndoPoint, METH_VARARGS , "undopt()"},
-	{"changed",NewChanged, METH_VARARGS , "changed()"},
-	{NULL, NULL, 0, NULL}
+struct module_state {
+	PyObject *error;
 };
 
-PyMODINIT_FUNC
+#if PY_MAJOR_VERSION >= 3
+#define GETSTATE(m) ((struct module_state*)PyModule_GetState(m))
+#else
+#define GETSTATE(m) (&_state)
+static struct module_state _state;
+#endif
+
+static PyObject *
+error_out(PyObject *m) {
+	struct module_state *st = GETSTATE(m);
+	PyErr_SetString(st->error, "something bad happened");
+	return NULL;
+}
+
+
+static PyMethodDef HeeksPythonMethods[] = {
+	{ "sketch", NewSketch, METH_VARARGS, "sketch()" },
+	//	{"wxhandle", WxHandle, METH_VARARGS , "wxhandle()"},
+	{ "extrude", Extrude, METH_VARARGS, "extrude(sketch,height)" },
+	{ "revolve", Revolve, METH_VARARGS, "revolve(sketch,angle)" },
+	{ "reorder", Reorder, METH_VARARGS, "reorder(sketch)" },
+	{ "point", NewPoint, METH_VARARGS, "point(x,y,z)" },
+	{ "linearc2wire", LineArc2Wire, METH_VARARGS, "linearc2wire(linearc)" },
+	{ "pipe", Pipe, METH_VARARGS, "pipe(wire,sketch)" },
+	{ "arc", NewArc, METH_VARARGS, "arc(cx,cy,cz,radius,start_a,end_a,ux,uy,uz)" },
+	{ "arc2", NewArc2, METH_VARARGS, "arc(sx,sy,sz,ex,ey,ez,cx,cy,cz,ux,uy,uz)" },
+	{ "line", NewLine, METH_VARARGS, "line(start_x, start_y, end_x, end_y)" },
+	{ "line3d", NewLine3d, METH_VARARGS, "line3d(start_x, start_y, start_z, end_x, end_y, end_z)" },
+	{ "circle", NewCircle, METH_VARARGS, "circle(centre_x, centre_y, radius)" },
+	{ "cuboid", NewCuboid, METH_VARARGS, "cuboid(centre_x, centre_y, centre_z, length, width, height)" },
+	{ "cylinder", NewCylinder, METH_VARARGS, "cylinder(centre_x, centre_y, centre_z, radius, height)" },
+	{ "directedcylinder", NewCylinderEx, METH_VARARGS, "directedcylinder(centre_x, centre_y, centre_z, dir_x, dir_y, dir_z, radius, height)" },
+	{ "cone", NewCone, METH_VARARGS, "cylinder(centre_x, centre_y, centre_z, radius1, radius2, height)" },
+	{ "sphere", NewSphere, METH_VARARGS, "sphere(centre_x, centre_y, centre_z, radius)" },
+	{ "group", NewGroup, METH_VARARGS, "group()" },
+	{ "add", Add, METH_VARARGS, "add(group,obj)" },
+	{ "fuse", Fuse, METH_VARARGS, "fuse(obj1,obj2)" },
+	{ "common", Common, METH_VARARGS, "common(obj1,obj2)" },
+	{ "cut", Cut, METH_VARARGS, "cut(obj1,obj2)" },
+	{ "getlastobj", GetLastObj, METH_VARARGS, "getlastobj()" },
+	{ "rotate", Rotate, METH_VARARGS, "rotate(object,p_x,p_y,p_z,u_x,u_y,u_z,r)" },
+	{ "translate", Translate, METH_VARARGS, "translate(object,p_x,p_y,p_z)" },
+	{ "scale", Scale, METH_VARARGS, "scale(object,p_x,p_y,p_z,scale)" },
+	{ "setcolor", SetColor, METH_VARARGS, "setcolor(int r, int b, int g)" },
+	{ "fillet2d", Fillet2d, METH_VARARGS, "fillet2d(obj,point,radius)" },
+	{ "coordinate", NewCoordinateSystem, METH_VARARGS, "coordinate(position,x_vec,y_vec)" },
+	{ "pickpoint", PickPoint, METH_VARARGS, "pickpoint()" },
+	{ "lastclicked", GetClickedPos, METH_VARARGS, "lastclicked()" },
+	{ "view_extents", ViewExtents, METH_VARARGS, "view_extents()" },
+	{ "ve", ViewExtents, METH_VARARGS, "ve()" },
+	{ "xyzview", XYZview, METH_VARARGS, "xyzview()" },
+	{ "getpoint", GetPoint3d, METH_VARARGS, "getpoint()" },
+	{ "addtext", NewText, METH_VARARGS, "addtext('string')" },
+	{ "importdxf", DXFImport, METH_VARARGS, "importdxf('/filepath/filename.dxf')" },
+	{ "addmenu", AddMenu, METH_VARARGS, "menu = addmenu('string')" },
+	{ "add_menu_item", AddMenuItem, METH_VARARGS, "add_menu_item(menu, 'string', callback, icon)" },
+	{ "add_window", AddWindow, METH_VARARGS, "add_window(hwnd)" },
+	{ "get_frame_hwnd", GetFrameHwnd, METH_VARARGS, "hwnd = get_frame_hwnd()" },
+	{ "get_frame_id", GetFrameId, METH_VARARGS, "hwnd = get_frame_id()" },
+	{ "redraw", Redraw, METH_VARARGS, "redraw()" },
+	{ "getsketch", GetSketch, METH_VARARGS, "getsketch()" },
+	{ "getsketches", GetSketches, METH_VARARGS, "getsketches()" },
+	{ "get_selected_sketches", GetSelectedSketches, METH_VARARGS, "get_selected_sketches()" },
+	{ "register_callbacks", RegisterCallbacks, METH_VARARGS, "register_callbacks(on_new_or_open)" },
+	{ "get_view_units", GetViewUnits, METH_VARARGS, "units = get_view_units()" },
+	{ "GetFileFullPath", GetFileFullPath, METH_VARARGS, "file_path = GetFileFullPath()" },
+	{ "GetSketchShape", GetSketchShape, METH_VARARGS, "s = GetSketchShape(2)" },
+	{ "remove", RemoveObject, METH_VARARGS, "remove(object)" },
+	{ "undopt", NewCreateUndoPoint, METH_VARARGS, "undopt()" },
+	{ "changed", NewChanged, METH_VARARGS, "changed()" },
+	{ "error_out", (PyCFunction)error_out, METH_NOARGS, NULL },
+	{ NULL, NULL, 0, NULL }
+};
+
+#if PY_MAJOR_VERSION >= 3
+
+static int HeeksPython_traverse(PyObject *m, visitproc visit, void *arg) {
+	Py_VISIT(GETSTATE(m)->error);
+	return 0;
+}
+
+static int HeeksPython_clear(PyObject *m) {
+	Py_CLEAR(GETSTATE(m)->error);
+	return 0;
+}
+
+
+static struct PyModuleDef moduledef = {
+	PyModuleDef_HEAD_INIT,
+	"HeeksPython",
+	NULL,
+	sizeof(struct module_state),
+	HeeksPythonMethods,
+	NULL,
+	HeeksPython_traverse,
+	HeeksPython_clear,
+	NULL
+};
+
+#define INITERROR return NULL
+
+PyObject *
+PyInit_HeeksPython(void)
+
+#else
+#define INITERROR return
+
+void
 initHeeksPython(void)
+#endif
 {
-	Py_InitModule("HeeksPython", HeeksPythonMethods);
+#if PY_MAJOR_VERSION >= 3
+	PyObject *module = PyModule_Create(&moduledef);
+#else
+	PyObject *module = Py_InitModule("HeeksPython", HeeksPythonMethods);
+#endif
+
+	if (module == NULL)
+		INITERROR;
+	struct module_state *st = GETSTATE(module);
+
+	st->error = PyErr_NewException("HeeksPython.Error", NULL, NULL);
+	if (st->error == NULL) {
+		Py_DECREF(module);
+		INITERROR;
+	}
+
+#if PY_MAJOR_VERSION >= 3
+	return module;
+#endif
 }
